@@ -14,10 +14,6 @@ func NewCloudProviderOptions() *CloudProviderOptions {
 }
 
 func (s *CloudProviderOptions) Validates() error {
-	/*
-		allErrors := []error{}
-		return allErrors
-	*/
 	return nil
 }
 
