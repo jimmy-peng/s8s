@@ -2,9 +2,9 @@ package app
 
 import (
 	"fmt"
-	"s8s/pkg/api/legacyscheme"
 	"s8s/cmd/kube-apiserver/app/options"
 	cliflag "s8s/component-base/cli/flag"
+	"s8s/pkg/api/legacyscheme"
 
 	"s8s/pkg/controlplane"
 	genericapiserver "s8s/staging/apiserver/pkg/server"
@@ -41,9 +41,14 @@ func CreateKubeAPIServerConfig(s completedServerRunOptions) (
 
 }
 
-func CreateServerChain(completeOptions completedServerRunOptions, stopCh <-chan struct{}) error {
-	//kubeAPIServerConfig, err := CreateKubeAPIServerConfig(completeOptions)
-	_, err := CreateKubeAPIServerConfig(completeOptions)
+func CreateServerChain(completedOptions completedServerRunOptions, stopCh <-chan struct{}) error {
+	kubeAPIServerConfig, err := CreateKubeAPIServerConfig(completedOptions)
+	//_, err := CreateKubeAPIServerConfig(completeOptions)
+	apiExtensionsConfig, err := createAPIExtensionsConfig(*kubeAPIServerConfig.GenericConfig, completedOptions.MasterCount)
+
+	//apiExtensionsServer, err := createAPIExtensionsServer(apiExtensionsConfig, genericapiserver.NewEmptyDelegate())
+	_, err = createAPIExtensionsServer(apiExtensionsConfig, genericapiserver.NewEmptyDelegate())
+
 	return err
 }
 
