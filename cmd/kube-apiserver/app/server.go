@@ -25,6 +25,11 @@ func Complete(s *options.ServerRunOptions) (completedServerRunOptions, error) {
 
 func buildGenericConfig(s *options.ServerRunOptions) (genericConfig *genericapiserver.Config) {
 	genericConfig = genericapiserver.NewConfig(legacyscheme.Codecs)
+
+	if lastErr := s.SecureServing.ApplyTo(&genericConfig.SecureServing/*, &genericConfig.LoopbackClientConfig*/); lastErr != nil {
+		return
+	}
+
 	return genericConfig
 }
 

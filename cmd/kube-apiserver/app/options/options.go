@@ -4,9 +4,11 @@ import (
 	"fmt"
 	cliflag "s8s/component-base/cli/flag"
 	kubeoptions "s8s/pkg/kubeapiserver/options"
+	genericoptions "s8s/staging/apiserver/pkg/server/options"
 )
 
 type ServerRunOptions struct {
+	SecureServing           *genericoptions.SecureServingOptionsWithLoopback
 	EnableLogsHandler bool
 	MasterCount       int
 	CloudProvider     *kubeoptions.CloudProviderOptions
