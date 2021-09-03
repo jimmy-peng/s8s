@@ -10,6 +10,7 @@ import (
 	genericapiserver "s8s/staging/apiserver/pkg/server"
 
 	"github.com/spf13/cobra"
+	aggregatorapiserver "s8s/staging/kube-aggregator/pkg/apiserver"
 )
 
 type completedServerRunOptions struct {
@@ -41,23 +42,40 @@ func CreateKubeAPIServerConfig(s completedServerRunOptions) (
 
 }
 
-func CreateServerChain(completedOptions completedServerRunOptions, stopCh <-chan struct{}) error {
+func CreateServerChain(completedOptions completedServerRunOptions, stopCh <-chan struct{}) (*aggregatorapiserver.APIAggregator, error) {
 	kubeAPIServerConfig, err := CreateKubeAPIServerConfig(completedOptions)
 	//_, err := CreateKubeAPIServerConfig(completeOptions)
 	apiExtensionsConfig, err := createAPIExtensionsConfig(*kubeAPIServerConfig.GenericConfig, completedOptions.MasterCount)
 
-	//apiExtensionsServer, err := createAPIExtensionsServer(apiExtensionsConfig, genericapiserver.NewEmptyDelegate())
-	_, err = createAPIExtensionsServer(apiExtensionsConfig, genericapiserver.NewEmptyDelegate())
+	apiExtensionsServer, err := createAPIExtensionsServer(apiExtensionsConfig, genericapiserver.NewEmptyDelegate())
+	kubeAPIServer, err := CreateKubeAPIServer(kubeAPIServerConfig, apiExtensionsServer.GenericAPIServer)
+	aggregatorConfig, err := createAggregatorConfig(*kubeAPIServerConfig.GenericConfig, completedOptions.ServerRunOptions)
+	aggregatorServer, err := createAggregatorServer(aggregatorConfig, kubeAPIServer.GenericAPIServer)
+	return aggregatorServer, err
+}
 
-	return err
+// CreateKubeAPIServer creates and wires a workable kube-apiserver
+func CreateKubeAPIServer(kubeAPIServerConfig *controlplane.Config, delegateAPIServer genericapiserver.DelegationTarget) (*controlplane.Instance, error) {
+	kubeAPIServer, err := kubeAPIServerConfig.Complete().New(delegateAPIServer)
+	if err != nil {
+		return nil, err
+	}
+
+	return kubeAPIServer, nil
 }
 
 func Run(completeOptions completedServerRunOptions, stopCh <-chan struct{}) error {
-	err := CreateServerChain(completeOptions, stopCh)
+	server, err := CreateServerChain(completeOptions, stopCh)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	prepared, err := server.PrepareRun()
+	if err != nil {
+		return err
+	}
+
+	return prepared.Run(stopCh)
 }
 
 func NewAPIServerCommand() *cobra.Command {

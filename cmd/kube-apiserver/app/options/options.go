@@ -37,6 +37,6 @@ func (s *ServerRunOptions) Validate() []error {
 	if s.MasterCount <= 0 {
 		errs = append(errs, fmt.Errorf("--apiserver-count should be a positive number"))
 	}
-	errs = append(errs, s.CloudProvider.Validates())
+	//errs = append(errs, s.CloudProvider.Validates())
 	return errs
 }
