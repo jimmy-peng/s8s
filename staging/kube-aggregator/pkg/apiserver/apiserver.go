@@ -83,6 +83,7 @@ type preparedAPIAggregator struct {
 // PrepareRun prepares the aggregator to run, by setting up the OpenAPI spec and calling
 // the generic PrepareRun.
 func (s *APIAggregator) PrepareRun() (preparedAPIAggregator, error) {
+	
 	prepared := s.GenericAPIServer.PrepareRun()
 
 	return preparedAPIAggregator{APIAggregator: s, runnable: prepared}, nil

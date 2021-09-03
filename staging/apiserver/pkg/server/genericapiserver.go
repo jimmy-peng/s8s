@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"time"
 )
 
@@ -46,7 +45,7 @@ func (s GenericAPIServer) ListedPaths() []string {
 
 // PrepareRun does post API installation setup steps. It calls recursively the same function of the delegates.
 func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
-	//s.delegationTarget.PrepareRun()
+	s.delegationTarget.PrepareRun()
 
 	return preparedGenericAPIServer{s}
 }
