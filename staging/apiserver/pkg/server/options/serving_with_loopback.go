@@ -8,6 +8,10 @@ type SecureServingOptionsWithLoopback struct {
 	*SecureServingOptions
 }
 
+func (o *SecureServingOptions) WithLoopback() *SecureServingOptionsWithLoopback {
+	return &SecureServingOptionsWithLoopback{o}
+}
+
 // ApplyTo fills up serving information in the server configuration.
 func (s *SecureServingOptionsWithLoopback) ApplyTo(secureServingInfo **server.SecureServingInfo /*, loopbackClientConfig **rest.Config*/) error {
 	if s == nil || s.SecureServingOptions == nil || secureServingInfo == nil {
@@ -18,7 +22,7 @@ func (s *SecureServingOptionsWithLoopback) ApplyTo(secureServingInfo **server.Se
 		return err
 	}
 
-/*
+	/*
 		if *secureServingInfo == nil || loopbackClientConfig == nil {
 			return nil
 		}

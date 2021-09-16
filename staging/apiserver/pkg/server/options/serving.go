@@ -8,6 +8,8 @@ import (
 	"s8s/staging/apiserver/pkg/server/dynamiccertificates"
 	"strconv"
 	"syscall"
+
+	"github.com/spf13/pflag"
 )
 
 type SecureServingOptions struct {
@@ -80,6 +82,52 @@ type GeneratableKeyCert struct {
 	FixtureDirectory string
 }
 
+func (s *SecureServingOptions) AddFlags(fs *pflag.FlagSet) {
+	if s == nil {
+		return
+	}
+
+	fs.IPVar(&s.BindAddress, "bind-address", s.BindAddress, ""+
+		"The IP address on which to listen for the --secure-port port. The "+
+		"associated interface(s) must be reachable by the rest of the cluster, and by CLI/web "+
+		"clients. If blank or an unspecified address (0.0.0.0 or ::), all interfaces will be used.")
+
+	desc := "The port on which to serve HTTPS with authentication and authorization."
+	if s.Required {
+		desc += " It cannot be switched off with 0."
+	} else {
+		desc += " If 0, don't serve HTTPS at all."
+	}
+	fs.IntVar(&s.BindPort, "secure-port", s.BindPort, desc)
+
+	fs.StringVar(&s.ServerCert.CertDirectory, "cert-dir", s.ServerCert.CertDirectory, ""+
+		"The directory where the TLS certs are located. "+
+		"If --tls-cert-file and --tls-private-key-file are provided, this flag will be ignored.")
+
+	fs.StringVar(&s.ServerCert.CertKey.CertFile, "tls-cert-file", s.ServerCert.CertKey.CertFile, ""+
+		"File containing the default x509 Certificate for HTTPS. (CA cert, if any, concatenated "+
+		"after server cert). If HTTPS serving is enabled, and --tls-cert-file and "+
+		"--tls-private-key-file are not provided, a self-signed certificate and key "+
+		"are generated for the public address and saved to the directory specified by --cert-dir.")
+
+	fs.StringVar(&s.ServerCert.CertKey.KeyFile, "tls-private-key-file", s.ServerCert.CertKey.KeyFile,
+		"File containing the default x509 private key matching --tls-cert-file.")
+
+	fs.IntVar(&s.HTTP2MaxStreamsPerConnection, "http2-max-streams-per-connection", s.HTTP2MaxStreamsPerConnection, ""+
+		"The limit that the server gives to clients for "+
+		"the maximum number of streams in an HTTP/2 connection. "+
+		"Zero means to use golang's default.")
+
+	fs.BoolVar(&s.PermitPortSharing, "permit-port-sharing", s.PermitPortSharing,
+		"If true, SO_REUSEPORT will be used when binding the port, which allows "+
+			"more than one instance to bind on the same address and port. [default=false]")
+
+	fs.BoolVar(&s.PermitAddressSharing, "permit-address-sharing", s.PermitAddressSharing,
+		"If true, SO_REUSEADDR will be used when binding the port. This allows binding "+
+			"to wildcard IPs like 0.0.0.0 and specific IPs in parallel, and it avoids waiting "+
+			"for the kernel to release sockets in TIME_WAIT state. [default=false]")
+}
+
 // ApplyTo fills up serving information in the server configuration.
 func (s *SecureServingOptions) ApplyTo(config **server.SecureServingInfo) error {
 	if s == nil {
@@ -135,31 +183,31 @@ func (s *SecureServingOptions) ApplyTo(config **server.SecureServingInfo) error 
 	} /*else if s.ServerCert.GeneratedCert != nil {
 		c.Cert = s.ServerCert.GeneratedCert
 	}*/
-/*
-	if len(s.CipherSuites) != 0 {
-		cipherSuites, err := cliflag.TLSCipherSuites(s.CipherSuites)
+	/*
+		if len(s.CipherSuites) != 0 {
+			cipherSuites, err := cliflag.TLSCipherSuites(s.CipherSuites)
+			if err != nil {
+				return err
+			}
+			c.CipherSuites = cipherSuites
+		}
+
+		var err error
+		c.MinTLSVersion, err = cliflag.TLSVersion(s.MinTLSVersion)
 		if err != nil {
 			return err
 		}
-		c.CipherSuites = cipherSuites
-	}
 
-	var err error
-	c.MinTLSVersion, err = cliflag.TLSVersion(s.MinTLSVersion)
-	if err != nil {
-		return err
-	}
-
-	// load SNI certs
-	namedTLSCerts := make([]dynamiccertificates.SNICertKeyContentProvider, 0, len(s.SNICertKeys))
-	for _, nck := range s.SNICertKeys {
-		tlsCert, err := dynamiccertificates.NewDynamicSNIContentFromFiles("sni-serving-cert", nck.CertFile, nck.KeyFile, nck.Names...)
-		namedTLSCerts = append(namedTLSCerts, tlsCert)
-		if err != nil {
-			return fmt.Errorf("failed to load SNI cert and key: %v", err)
+		// load SNI certs
+		namedTLSCerts := make([]dynamiccertificates.SNICertKeyContentProvider, 0, len(s.SNICertKeys))
+		for _, nck := range s.SNICertKeys {
+			tlsCert, err := dynamiccertificates.NewDynamicSNIContentFromFiles("sni-serving-cert", nck.CertFile, nck.KeyFile, nck.Names...)
+			namedTLSCerts = append(namedTLSCerts, tlsCert)
+			if err != nil {
+				return fmt.Errorf("failed to load SNI cert and key: %v", err)
+			}
 		}
-	}
-	c.SNICerts = namedTLSCerts
+		c.SNICerts = namedTLSCerts
 	*/
 
 	return nil

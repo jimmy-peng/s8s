@@ -37,6 +37,13 @@ type GenericAPIServer struct {
 	ShutdownTimeout time.Duration
 	// delegationTarget is the next delegate in the chain. This is never nil.
 	delegationTarget DelegationTarget
+
+	// SecureServingInfo holds configuration of the TLS server.
+	SecureServingInfo *SecureServingInfo
+
+	// "Outputs"
+	// Handler holds the handlers being used by this API server
+	Handler *APIServerHandler
 }
 
 func (s GenericAPIServer) ListedPaths() []string {
@@ -50,6 +57,26 @@ func (s *GenericAPIServer) PrepareRun() preparedGenericAPIServer {
 	return preparedGenericAPIServer{s}
 }
 
+// NonBlockingRun spawns the secure http server. An error is
+// returned if the secure port cannot be listened on.
+// The returned channel is closed when the (asynchronous) termination is finished.
+func (s preparedGenericAPIServer) NonBlockingRun() error {
+
+	if s.SecureServingInfo != nil && s.Handler != nil {
+		var err error
+		err = s.SecureServingInfo.ServeWithListenerStopped(s.Handler)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 func (s preparedGenericAPIServer) Run(stopCh <-chan struct{}) error {
+	err := s.NonBlockingRun()
+	if err != nil {
+		return err
+	}
 	return nil
 }

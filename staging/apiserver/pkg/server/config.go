@@ -26,8 +26,11 @@ type CompletedConfig struct {
 }
 
 func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*GenericAPIServer, error) {
+	apiServerHandler := NewAPIServerHandler()
 	s := &GenericAPIServer{
-		delegationTarget: delegationTarget,
+		delegationTarget:  delegationTarget,
+		SecureServingInfo: c.SecureServing,
+		Handler:           apiServerHandler,
 	}
 	return s, nil
 }

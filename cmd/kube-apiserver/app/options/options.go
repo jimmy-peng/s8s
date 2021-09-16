@@ -16,6 +16,7 @@ type ServerRunOptions struct {
 
 func NewServerRunOptions() *ServerRunOptions {
 	s := ServerRunOptions{
+		SecureServing:     kubeoptions.NewSecureServingOptions(),
 		CloudProvider:     kubeoptions.NewCloudProviderOptions(),
 		EnableLogsHandler: true,
 		MasterCount:       1,
@@ -25,6 +26,7 @@ func NewServerRunOptions() *ServerRunOptions {
 }
 
 func (s *ServerRunOptions) Flags() (fss cliflag.NamedFlagSets) {
+	s.SecureServing.AddFlags(fss.FlagSet("secure serving"))
 	// Note: the weird ""+ in below lines seems to be the only way to get gofmt to
 	// arrange these text blocks sensibly. Grrr.
 	fs := fss.FlagSet("misc")

@@ -9,7 +9,8 @@ func createAPIExtensionsConfig(
 	kubeAPIServerConfig genericapiserver.Config,
 	masterCount int) (*apiextensionsapiserver.Config, error) {
 	genericConfig := kubeAPIServerConfig
-		apiextensionsConfig := &apiextensionsapiserver.Config{
+	
+	apiextensionsConfig := &apiextensionsapiserver.Config{
 		GenericConfig: &genericapiserver.RecommendedConfig{
 			Config:                genericConfig,
 		},
