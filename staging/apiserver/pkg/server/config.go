@@ -2,6 +2,7 @@ package server
 
 import (
 	"net"
+	"net/http"
 	"s8s/staging/apimachinery/pkg/runtime/serializer"
 	"s8s/staging/apiserver/pkg/server/dynamiccertificates"
 )
@@ -14,6 +15,8 @@ type Config struct {
 	// This is required for proper functioning of the PostStartHooks on a GenericAPIServer
 	// TODO: move into SecureServing(WithLoopback) as soon as insecure serving is gone
 	//LoopbackClientConfig *restclient.Config
+	// BuildHandlerChainFunc allows you to build custom handler chains by decorating the apiHandler.
+	BuildHandlerChainFunc func(apiHandler http.Handler, c *Config) (secure http.Handler)
 }
 
 type completedConfig struct {
@@ -26,7 +29,10 @@ type CompletedConfig struct {
 }
 
 func (c completedConfig) New(name string, delegationTarget DelegationTarget) (*GenericAPIServer, error) {
-	apiServerHandler := NewAPIServerHandler()
+	handlerChainBuilder := func(handler http.Handler) http.Handler {
+		return c.BuildHandlerChainFunc(handler, c.Config)
+	}
+	apiServerHandler := NewAPIServerHandler(name, handlerChainBuilder, delegationTarget.UnprotectedHandler())
 	s := &GenericAPIServer{
 		delegationTarget:  delegationTarget,
 		SecureServingInfo: c.SecureServing,
@@ -78,5 +84,11 @@ func (c *RecommendedConfig) Complete() CompletedConfig {
 }
 
 func NewConfig(codecs serializer.CodecFactory) *Config {
-	return &Config{}
+	return &Config{
+		BuildHandlerChainFunc:       DefaultBuildHandlerChain,
+	}
+}
+
+func DefaultBuildHandlerChain(apiHandler http.Handler, c *Config) http.Handler {
+	return apiHandler
 }
