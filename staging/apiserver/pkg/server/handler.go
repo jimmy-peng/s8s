@@ -3,6 +3,10 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"s8s/staging/apiserver/pkg/server/mux"
+	"strings"
+
+	"github.com/emicklei/go-restful"
 )
 
 type APIServerHandler struct {
@@ -30,12 +34,11 @@ type APIServerHandler struct {
 	// we should consider completely removing gorestful.
 	// Other servers should only use this opaquely to delegate to an API server.
 	Director http.Handler
-
 }
 
 type HandlerChainBuilderFn func(apiHandler http.Handler) http.Handler
 
-func NewAPIServerHandler(name string,/* s runtime.NegotiatedSerializer, */ handlerChainBuilder HandlerChainBuilderFn , notFoundHandler http.Handler) *APIServerHandler {
+func NewAPIServerHandler(name string /* s runtime.NegotiatedSerializer, */, handlerChainBuilder HandlerChainBuilderFn, notFoundHandler http.Handler) *APIServerHandler {
 	nonGoRestfulMux := mux.NewPathRecorderMux(name)
 	if notFoundHandler != nil {
 		nonGoRestfulMux.NotFoundHandler(notFoundHandler)
@@ -45,10 +48,12 @@ func NewAPIServerHandler(name string,/* s runtime.NegotiatedSerializer, */ handl
 	gorestfulContainer.ServeMux = http.NewServeMux()
 	gorestfulContainer.Router(restful.CurlyRouter{}) // e.g. for proxy/{kind}/{name}/{*}
 	gorestfulContainer.RecoverHandler(func(panicReason interface{}, httpWriter http.ResponseWriter) {
-		logStackOnRecover(s, panicReason, httpWriter)
+		return
+		//logStackOnRecover(s, panicReason, httpWriter)
 	})
 	gorestfulContainer.ServiceErrorHandler(func(serviceErr restful.ServiceError, request *restful.Request, response *restful.Response) {
-		serviceErrorHandler(s, serviceErr, request, response)
+		return
+		//serviceErrorHandler(s, serviceErr, request, response)
 	})
 
 	director := director{
@@ -63,8 +68,6 @@ func NewAPIServerHandler(name string,/* s runtime.NegotiatedSerializer, */ handl
 		NonGoRestfulMux:    nonGoRestfulMux,
 		Director:           director,
 	}
-
-	//return &APIServerHandler{}
 }
 
 // ServeHTTP makes it an http.Handler
@@ -78,7 +81,7 @@ type director struct {
 	goRestfulContainer *restful.Container
 	nonGoRestfulMux    *mux.PathRecorderMux
 }
-/*
+
 func (d director) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 
@@ -111,5 +114,5 @@ func (d director) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 	// if we didn't find a match, then we just skip gorestful altogether
 	//klog.V(5).Infof("%v: %v %q satisfied by nonGoRestful", d.name, req.Method, path)
-	d.nonGoRestfulMux.ServeHTTP(w, req)path := req.URL.Path
-}*/
+	d.nonGoRestfulMux.ServeHTTP(w, req)
+}

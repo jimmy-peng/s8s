@@ -1,10 +1,14 @@
 package server
 
 import (
+	"net/http"
 	"time"
 )
 
 type DelegationTarget interface {
+	// UnprotectedHandler returns a handler that is NOT protected by a normal chain
+	UnprotectedHandler() http.Handler
+
 	ListedPaths() []string
 	// PrepareRun does post API installation setup steps. It calls recursively the same function of the delegates.
 	PrepareRun() preparedGenericAPIServer
@@ -30,6 +34,10 @@ func NewEmptyDelegate() DelegationTarget {
 	return emptyDelegate{}
 }
 
+func (s emptyDelegate) UnprotectedHandler() http.Handler {
+	return nil
+}
+
 // GenericAPIServer contains state for a Kubernetes cluster api server.
 type GenericAPIServer struct {
 	// ShutdownTimeout is the timeout used for server shutdown. This specifies the timeout before server
@@ -44,6 +52,11 @@ type GenericAPIServer struct {
 	// "Outputs"
 	// Handler holds the handlers being used by this API server
 	Handler *APIServerHandler
+}
+
+func (s *GenericAPIServer) UnprotectedHandler() http.Handler {
+	// when we delegate, we need the server we're delegating to choose whether or not to use gorestful
+	return s.Handler.Director
 }
 
 func (s GenericAPIServer) ListedPaths() []string {
